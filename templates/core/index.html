@@ -232,45 +232,47 @@
     const SCOPE = ['https://www.googleapis.com/auth/drive.readonly'];
 
     let pickerApiLoaded = false;
-    let oauthToken;
+    let gisInited = false;
+    let tokenClient;
+    let accessToken = null;
 
     function onApiLoad() {
-        if (typeof gapi !== 'undefined') {
-            gapi.load('auth', { 'callback': () => { console.log('Auth API loaded'); } });
-            gapi.load('picker', { 'callback': () => { pickerApiLoaded = true; console.log('Picker API loaded'); } });
-        }
+        gapi.load('picker', { 'callback': () => { pickerApiLoaded = true; } });
+    }
+
+    function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPE.join(' '),
+            callback: '', // defined later
+        });
+        gisInited = true;
     }
 
     function triggerAuth() {
-        if (CLIENT_ID && DEVELOPER_KEY) {
-            window.gapi.auth.authorize(
-                {
-                    'client_id': CLIENT_ID,
-                    'scope': SCOPE,
-                    'immediate': false
-                },
-                handleAuthResult
-            );
-        } else {
-            alert("Google API configuration is missing.");
-        }
-    }
-
-    function handleAuthResult(authResult) {
-        if (authResult && !authResult.error) {
-            oauthToken = authResult.access_token;
+        tokenClient.callback = async (response) => {
+            if (response.error !== undefined) {
+                throw (response);
+            }
+            accessToken = response.access_token;
             createPicker();
-        } else if (authResult.error) {
-            console.error("Auth error:", authResult.error);
-            alert("Google Authentication failed. Please check your credentials.");
+        };
+
+        if (accessToken === null) {
+            // Prompt the user to select a Google Account and ask for consent to share their data
+            // with the developer of the application.
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        } else {
+            // Skip display of account chooser and consent dialog for an existing session.
+            tokenClient.requestAccessToken({ prompt: '' });
         }
     }
 
     function createPicker() {
-        if (pickerApiLoaded && oauthToken) {
+        if (pickerApiLoaded && accessToken) {
             const picker = new google.picker.PickerBuilder()
                 .addView(google.picker.ViewId.DOCS_IMAGES)
-                .setOAuthToken(oauthToken)
+                .setOAuthToken(accessToken)
                 .setDeveloperKey(DEVELOPER_KEY)
                 .setCallback(pickerCallback)
                 .build();
@@ -305,14 +307,10 @@
     }
 
     document.getElementById('authorize_button').addEventListener('click', function () {
-        if (!oauthToken) {
-            if (typeof gapi !== 'undefined' && gapi.auth) {
-                triggerAuth();
-            } else {
-                alert("Google API is loading. Please try again in a few seconds.");
-            }
+        if (gisInited && pickerApiLoaded) {
+            triggerAuth();
         } else {
-            createPicker();
+            alert("Google API is still loading. Please wait a moment.");
         }
     });
 
@@ -384,5 +382,6 @@
     });
 
 </script>
-<script async defer src="https://apis.google.com/js/api.js?onload=onApiLoad"></script>
+<script async defer src="https://apis.google.com/js/api.js" onload="onApiLoad()"></script>
+<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 {% endblock %}
