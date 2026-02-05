@@ -270,11 +270,15 @@
 
     function createPicker() {
         if (pickerApiLoaded && accessToken) {
+            const view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES);
+            view.setIncludeFolders(true); // Allow browsing folders to find images
+
             const picker = new google.picker.PickerBuilder()
-                .addView(google.picker.ViewId.DOCS_IMAGES)
+                .addView(view)
                 .setOAuthToken(accessToken)
                 .setDeveloperKey(DEVELOPER_KEY)
                 .setCallback(pickerCallback)
+                .setOrigin(window.location.protocol + '//' + window.location.host)
                 .build();
             picker.setVisible(true);
         }
