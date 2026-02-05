@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 import dj_database_url
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -90,11 +94,18 @@ DATABASES = {
     }
 }
 
-if 'DATABASE_URL' in os.environ and os.environ.get('DATABASE_URL'):
-    DATABASES['default'] = dj_database_url.config(
-        conn_max_age=600,
-        ssl_require=True
-    )
+db_url = os.environ.get('DATABASE_URL')
+if db_url:
+    try:
+        # Strip whitespace and parse
+        DATABASES['default'] = dj_database_url.parse(
+            db_url.strip(),
+            conn_max_age=600,
+            ssl_require=True
+        )
+    except Exception as e:
+        print(f"Error parsing DATABASE_URL: {e}")
+        # Fallback to local sqlite if parsing fails (or keep existing default)
 
 
 # Password validation
