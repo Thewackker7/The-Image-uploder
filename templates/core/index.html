@@ -250,28 +250,31 @@
     }
 
     function triggerAuth() {
+        console.log("Triggering Google Auth...");
         tokenClient.callback = async (response) => {
+            console.log("Auth response:", response);
             if (response.error !== undefined) {
-                throw (response);
+                alert("Google Auth Error: " + response.error);
+                console.error(response);
+                return;
             }
             accessToken = response.access_token;
+            console.log("Access token acquired, opening picker...");
             createPicker();
         };
 
         if (accessToken === null) {
-            // Prompt the user to select a Google Account and ask for consent to share their data
-            // with the developer of the application.
             tokenClient.requestAccessToken({ prompt: 'consent' });
         } else {
-            // Skip display of account chooser and consent dialog for an existing session.
             tokenClient.requestAccessToken({ prompt: '' });
         }
     }
 
     function createPicker() {
         if (pickerApiLoaded && accessToken) {
+            console.log("Creating Picker...");
             const view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES);
-            view.setIncludeFolders(true); // Allow browsing folders to find images
+            view.setIncludeFolders(true);
 
             const picker = new google.picker.PickerBuilder()
                 .addView(view)
@@ -281,20 +284,27 @@
                 .setOrigin(window.location.protocol + '//' + window.location.host)
                 .build();
             picker.setVisible(true);
+        } else {
+            console.error("Picker not ready:", { pickerApiLoaded, accessToken });
+            alert("Google Picker failed to initialize. Try refreshing.");
         }
     }
 
     function pickerCallback(data) {
         if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
             const doc = data[google.picker.Response.DOCUMENTS][0];
-            const url = doc[google.picker.Document.URL];
-            const thumbnails = doc[google.picker.Document.THUMBNAILS];
-            const bestUrl = thumbnails ? thumbnails[thumbnails.length - 1].url : url;
-            uploadToBackend(bestUrl);
+            const fileId = doc[google.picker.Document.ID];
+            // Format a direct view URL for the image
+            const url = `https://drive.google.com/uc?export=view&id=${fileId}`;
+            console.log("Picked file ID:", fileId, "URL:", url);
+            uploadToBackend(url);
+        } else if (data[google.picker.Response.ACTION] == google.picker.Action.CANCEL) {
+            console.log("Picker cancelled.");
         }
     }
 
     function uploadToBackend(url) {
+        console.log("Uploading to backend:", url);
         fetch('/upload/drive/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -302,11 +312,16 @@
         })
             .then(response => response.json())
             .then(data => {
+                console.log("Backend response:", data);
                 if (data.status === 'success') {
                     window.location.reload();
                 } else {
                     alert('Cloud import failed: ' + data.message);
                 }
+            })
+            .catch(err => {
+                console.error("Fetch error:", err);
+                alert("Network error while importing photo.");
             });
     }
 
