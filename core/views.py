@@ -41,10 +41,14 @@ def home(request):
                     messages.warning(request, "This photo has already been uploaded!")
                     return redirect('home')
                 
-                post = form.save(commit=False)
-                post.guest_name = guest_name
-                post.image_hash = img_hash
-                post.save()
+                try:
+                    post = form.save(commit=False)
+                    post.guest_name = guest_name
+                    post.image_hash = img_hash
+                    post.save()
+                    messages.success(request, "Memory saved successfully!")
+                except Exception as e:
+                    messages.error(request, f"Failed to save memory: {str(e)}")
             return redirect('home')
 
     posts = ImagePost.objects.all()
