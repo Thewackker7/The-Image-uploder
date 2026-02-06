@@ -87,28 +87,24 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# Database configuration using dj-database-url
+# This will use DATABASE_URL from the environment if it exists, otherwise fallback to SQLite
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
-db_url = os.environ.get('DATABASE_URL')
-if db_url:
-    try:
-        # Strip whitespace and parse
-        DATABASES['default'] = dj_database_url.parse(
-            db_url.strip(),
-            conn_max_age=600,
-            ssl_require=True
-        )
-        print("✅ Using PostgreSQL database")
-    except Exception as e:
-        print(f"❌ Error parsing DATABASE_URL: {e}")
-        print("⚠️ Falling back to SQLite")
+# Add a check to confirm which database is in use
+if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
+    if os.environ.get('DATABASE_URL'):
+        print("❌ Failed to parse DATABASE_URL correctly, using SQLite as fallback")
+    else:
+        print("ℹ️ DATABASE_URL not found, using SQLite")
 else:
-    print("ℹ️ DATABASE_URL not found, using SQLite")
+    print("✅ Using PostgreSQL database")
 
 
 # Password validation
