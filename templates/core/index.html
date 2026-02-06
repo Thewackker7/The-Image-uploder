@@ -108,9 +108,6 @@
                     {% if post.image_file %}
                     <img src="{{ post.image_file.url }}" alt="Uploaded by {{ post.guest_name }}"
                         class="gallery-img cursor-pointer" title="Double click to delete your photo">
-                    {% elif post.image_url %}
-                    <img src="{{ post.image_url }}" alt="Shared by {{ post.guest_name }}"
-                        class="gallery-img cursor-pointer" title="Double click to delete your photo">
                     {% endif %}
 
                     <div

@@ -59,6 +59,9 @@ def home(request):
     }
     return render(request, 'core/index.html', context)
 
+import requests
+from django.core.files.base import ContentFile
+
 @csrf_exempt
 def upload_drive(request):
     if request.method == 'POST':
@@ -68,18 +71,39 @@ def upload_drive(request):
             if not image_url:
                 return JsonResponse({'status': 'error', 'message': 'No URL provided'}, status=400)
             
-            # For Drive URLs, we use the URL as a hash for now as fetching content might be complex
-            # and require auth tokens in headers.
-            img_hash = hashlib.sha256(image_url.encode()).hexdigest()
+            # For Drive URLs, we download the content to ensure it's saved to Cloudinary
+            try:
+                # Use a proper User-Agent to avoid being blocked
+                headers = {'User-Agent': 'Mozilla/5.0'}
+                response = requests.get(image_url, headers=headers, timeout=10)
+                response.raise_for_status()
+                
+                # Check if it's actually an image
+                content_type = response.headers.get('Content-Type', '')
+                if 'image' not in content_type:
+                    # Some drive URLs might redirect or return HTML if not direct
+                    return JsonResponse({'status': 'error', 'message': 'URL provided is not a direct image link'}, status=400)
+                
+                content = response.content
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': f'Failed to download image: {str(e)}'}, status=400)
+
+            img_hash = hashlib.sha256(content).hexdigest()
             if ImagePost.objects.filter(image_hash=img_hash).exists():
                 return JsonResponse({'status': 'error', 'message': 'This photo has already been shared!'}, status=400)
 
             guest_name = get_guest_name(request)
-            ImagePost.objects.create(
+            # Create the file name
+            ext = content_type.split('/')[-1] if '/' in content_type else 'jpg'
+            file_name = f"drive_{img_hash[:10]}.{ext}"
+            
+            post = ImagePost(
                 guest_name=guest_name,
-                image_url=image_url,
                 image_hash=img_hash
             )
+            # Save the content to the ImageField
+            post.image_file.save(file_name, ContentFile(content), save=True)
+            
             return JsonResponse({'status': 'success'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
