@@ -91,13 +91,31 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # This will use DATABASE_URL from the environment if it exists, otherwise fallback to SQLite
 # Database configuration
 # This will use DATABASE_URL from the environment if it exists, otherwise fallback to SQLite
-if os.environ.get('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.config(
-            conn_max_age=600,
-            ssl_require=True
-        )
-    }
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    try:
+        # Clean the URL string from potential quotes or whitespace
+        cleaned_url = DATABASE_URL.strip().strip('"').strip("'")
+        DATABASES = {
+            'default': dj_database_url.parse(cleaned_url)
+        }
+        # Configure additional options
+        DATABASES['default']['CONN_MAX_AGE'] = 600
+        
+        # Enable SSL for Postgres on Render
+        if cleaned_url.startswith('postgres') or cleaned_url.startswith('postgresql'):
+            DATABASES['default'].setdefault('OPTIONS', {})
+            DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+            
+    except Exception:
+        # If parsing fails, use SQLite as a safe fallback to prevent boot failure
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 else:
     DATABASES = {
         'default': {
