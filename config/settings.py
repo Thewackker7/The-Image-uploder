@@ -103,9 +103,12 @@ if db_url:
             conn_max_age=600,
             ssl_require=True
         )
+        print("✅ Using PostgreSQL database")
     except Exception as e:
-        print(f"Error parsing DATABASE_URL: {e}")
-        # Fallback to local sqlite if parsing fails (or keep existing default)
+        print(f"❌ Error parsing DATABASE_URL: {e}")
+        print("⚠️ Falling back to SQLite")
+else:
+    print("ℹ️ DATABASE_URL not found, using SQLite")
 
 
 # Password validation
