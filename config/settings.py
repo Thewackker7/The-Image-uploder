@@ -93,10 +93,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # This will use DATABASE_URL from the environment if it exists, otherwise fallback to SQLite
 if os.environ.get('DATABASE_URL'):
     DATABASES = {
-        'default': dj_database_url.config(
-            conn_max_age=600,
-            ssl_require=True
-        )
+        'default': dj_database_url.config(conn_max_age=600)
     }
 else:
     DATABASES = {
