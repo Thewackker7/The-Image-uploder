@@ -9,8 +9,31 @@ from django.contrib import messages
 from .models import ImagePost
 from .forms import ImageUploadForm
 
+from django.utils.timezone import make_aware
+from PIL import Image
+from PIL.ExifTags import TAGS
+from datetime import datetime
+import io
+
 ADJECTIVES = ['Neon', 'Cyber', 'Retro', 'Quantum', 'Pixel', 'Vapor', 'Holo', 'Glitch', 'Cosmic', 'Astro']
 NOUNS = ['Panda', 'Fox', 'Surfer', 'Ninja', 'Samurai', 'Wizard', 'Driver', 'Ghost', 'Rider', 'Voyager']
+
+def get_exif_date(file_obj):
+    try:
+        # Open the image properly
+        image = Image.open(file_obj)
+        exif = image._getexif()
+        if not exif:
+            return None
+        
+        for tag, value in exif.items():
+            decoded = TAGS.get(tag, tag)
+            if decoded == 'DateTimeOriginal':
+                dt = datetime.strptime(value, '%Y:%m:%d %H:%M:%S')
+                return make_aware(dt)
+    except Exception:
+        pass
+    return None
 
 def get_guest_name(request):
     if 'guest_name' not in request.session:
@@ -44,6 +67,12 @@ def home(request):
                 post = form.save(commit=False)
                 post.guest_name = guest_name
                 post.image_hash = img_hash
+                
+                # Extract date taken
+                image_file.seek(0)
+                post.taken_at = get_exif_date(image_file)
+                image_file.seek(0)
+                
                 post.save()
             return redirect('home')
 
@@ -101,6 +130,13 @@ def upload_drive(request):
                 guest_name=guest_name,
                 image_hash=img_hash
             )
+
+            # Extract date taken
+            try:
+                post.taken_at = get_exif_date(io.BytesIO(content))
+            except Exception:
+                pass
+
             # Save the content to the ImageField
             post.image_file.save(file_name, ContentFile(content), save=True)
             

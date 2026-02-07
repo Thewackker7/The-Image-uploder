@@ -7,6 +7,7 @@ class ImagePost(models.Model):
     image_url = models.URLField(blank=True, null=True)
     image_hash = models.CharField(max_length=64, blank=True, null=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    taken_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.guest_name} - {self.created_at}"

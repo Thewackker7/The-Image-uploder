@@ -146,15 +146,27 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files (Cloudinary)
 MEDIA_URL = '/media/'
 
-# Use modern STORAGES dictionary for Django 5.0+
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+# Modern STORAGES dictionary for Django 5.0+
+if os.environ.get('RENDER') or os.environ.get('DATABASE_URL'):
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    # Local development
+    MEDIA_ROOT = BASE_DIR / 'MEDIA'
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 # Cloudinary Config
 import cloudinary
