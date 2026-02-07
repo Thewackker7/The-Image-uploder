@@ -64,16 +64,23 @@ def home(request):
                     messages.warning(request, "This photo has already been uploaded!")
                     return redirect('home')
                 
-                post = form.save(commit=False)
-                post.guest_name = guest_name
-                post.image_hash = img_hash
-                
-                # Extract date taken
-                image_file.seek(0)
-                post.taken_at = get_exif_date(image_file)
-                image_file.seek(0)
-                
-                post.save()
+                try:
+                    post = form.save(commit=False)
+                    post.guest_name = guest_name
+                    post.image_hash = img_hash
+                    
+                    # Extract date taken
+                    try:
+                        image_file.seek(0)
+                        post.taken_at = get_exif_date(image_file)
+                        image_file.seek(0)
+                    except Exception as e:
+                        print(f"Failed to extract EXIF: {e}")
+                    
+                    post.save()
+                    messages.success(request, "Memory saved successfully!")
+                except Exception as e:
+                    messages.error(request, f"Failed to save memory: {str(e)}")
             return redirect('home')
 
     posts = ImagePost.objects.all()
