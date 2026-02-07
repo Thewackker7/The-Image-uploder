@@ -92,9 +92,18 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database configuration
 # This will use DATABASE_URL from the environment if it exists, otherwise fallback to SQLite
 if os.environ.get('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600)
-    }
+    try:
+        DATABASES = {
+            'default': dj_database_url.config(conn_max_age=600)
+        }
+    except Exception as e:
+        print(f"Error parsing DATABASE_URL: {e}, falling back to SQLite")
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 else:
     DATABASES = {
         'default': {
