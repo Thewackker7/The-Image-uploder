@@ -98,11 +98,13 @@ def home(request):
         return render(request, 'core/index.html', context)
     except Exception as e:
         import traceback
-        print(f"ERROR in home view: {e}")
+        from django.db import connection
+        db_engine = connection.vendor
+        print(f"ERROR in home view ({db_engine}): {e}")
         print(traceback.format_exc())
         # Return a simple error response instead of crashing
         from django.http import HttpResponse
-        return HttpResponse(f"Server Error: {str(e)}<br><br>Check Render logs for details.", status=500)
+        return HttpResponse(f"Server Error (DB: {db_engine}): {str(e)}<br><br>Check Render logs for details.", status=500)
 
 import requests
 from django.core.files.base import ContentFile
