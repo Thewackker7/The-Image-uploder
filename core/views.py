@@ -49,51 +49,60 @@ def calculate_hash(file_obj):
     return sha256_hash.hexdigest()
 
 def home(request):
-    guest_name = get_guest_name(request)
-    form = ImageUploadForm()
-    
-    if request.method == 'POST':
-        form = ImageUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            image_file = request.FILES.get('image_file')
-            if image_file:
-                # Calculate hash for duplicate prevention
-                img_hash = calculate_hash(image_file)
-                image_file.seek(0)  # Reset pointer for Cloudinary
-                if ImagePost.objects.filter(image_hash=img_hash).exists():
-                    messages.warning(request, "This photo has already been uploaded!")
-                    return redirect('home')
-                
-                try:
-                    post = form.save(commit=False)
-                    post.guest_name = guest_name
-                    post.image_hash = img_hash
+    try:
+        guest_name = get_guest_name(request)
+        form = ImageUploadForm()
+        
+        if request.method == 'POST':
+            form = ImageUploadForm(request.POST, request.FILES)
+            if form.is_valid():
+                image_file = request.FILES.get('image_file')
+                if image_file:
+                    # Calculate hash for duplicate prevention
+                    img_hash = calculate_hash(image_file)
+                    image_file.seek(0)  # Reset pointer for Cloudinary
+                    if ImagePost.objects.filter(image_hash=img_hash).exists():
+                        messages.warning(request, "This photo has already been uploaded!")
+                        return redirect('home')
                     
-                    # Extract date taken
                     try:
-                        image_file.seek(0)
-                        post.taken_at = get_exif_date(image_file)
-                        image_file.seek(0)
+                        post = form.save(commit=False)
+                        post.guest_name = guest_name
+                        post.image_hash = img_hash
+                        
+                        # Extract date taken
+                        try:
+                            image_file.seek(0)
+                            post.taken_at = get_exif_date(image_file)
+                            image_file.seek(0)
+                        except Exception as e:
+                            print(f"Failed to extract EXIF: {e}")
+                        
+                        post.save()
+                        messages.success(request, "Memory saved successfully!")
                     except Exception as e:
-                        print(f"Failed to extract EXIF: {e}")
-                    
-                    post.save()
-                    messages.success(request, "Memory saved successfully!")
-                except Exception as e:
-                    messages.error(request, f"Failed to save memory: {str(e)}")
-            return redirect('home')
+                        print(f"Failed to save post: {e}")
+                        messages.error(request, f"Failed to save memory: {str(e)}")
+                return redirect('home')
 
-    posts = ImagePost.objects.all()
-    
-    context = {
-        'guest_name': guest_name,
-        'form': form,
-        'posts': posts,
-        'google_api_key': os.environ.get('GOOGLE_API_KEY', ''),
-        'google_app_id': os.environ.get('GOOGLE_APP_ID', ''), 
-        'google_client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
-    }
-    return render(request, 'core/index.html', context)
+        posts = ImagePost.objects.all()
+        
+        context = {
+            'guest_name': guest_name,
+            'form': form,
+            'posts': posts,
+            'google_api_key': os.environ.get('GOOGLE_API_KEY', ''),
+            'google_app_id': os.environ.get('GOOGLE_APP_ID', ''), 
+            'google_client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
+        }
+        return render(request, 'core/index.html', context)
+    except Exception as e:
+        import traceback
+        print(f"ERROR in home view: {e}")
+        print(traceback.format_exc())
+        # Return a simple error response instead of crashing
+        from django.http import HttpResponse
+        return HttpResponse(f"Server Error: {str(e)}<br><br>Check Render logs for details.", status=500)
 
 import requests
 from django.core.files.base import ContentFile
