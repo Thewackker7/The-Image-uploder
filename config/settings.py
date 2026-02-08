@@ -87,17 +87,30 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# Database configuration using dj-database-url
-# This will use DATABASE_URL from the environment if it exists, otherwise fallback to SQLite
 # Database configuration
-# This will use DATABASE_URL from the environment if it exists, otherwise fallback to SQLite
 if os.environ.get('DATABASE_URL'):
     try:
         DATABASES = {
-            'default': dj_database_url.config(conn_max_age=600)
+            'default': dj_database_url.config(
+                default=os.environ.get('DATABASE_URL'),
+                conn_max_age=600,
+                conn_health_checks=True,
+                ssl_require=True
+            )
         }
+        # Ensure SSL is enabled for PostgreSQL connections (required by Supabase)
+        if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+            DATABASES['default'].setdefault('OPTIONS', {})
+            DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+        
+        print(f"✓ Connected to PostgreSQL database")
     except Exception as e:
-        print(f"Error parsing DATABASE_URL: {e}, falling back to SQLite")
+        print(f"✗ Error parsing DATABASE_URL: {e}")
+        print(f"DATABASE_URL value: {os.environ.get('DATABASE_URL', 'NOT SET')[:50]}...")
+        # In production, raise the error instead of falling back
+        if 'RENDER' in os.environ:
+            raise
+        # In development, fall back to SQLite
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
@@ -111,6 +124,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+    print("Using SQLite database for local development")
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
