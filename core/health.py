@@ -40,16 +40,6 @@ def health_check(request):
     except Exception as e:
         status['cloudinary'] = f'ERROR: {str(e)[:100]}'
     
-    # Check migrations
-    try:
-        from django.db.migrations.executor import MigrationExecutor
-        executor = MigrationExecutor(connection)
-        plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
-        status['pending_migrations'] = [str(migration) for migration, backwards in plan]
-        status['migrations_synced'] = len(plan) == 0
-    except Exception as e:
-        status['pending_migrations'] = f'ERROR: {str(e)}'
-    
     # Check environment variables (without exposing values)
     status['env_vars'] = {
         'DATABASE_URL': 'SET' if os.environ.get('DATABASE_URL') else 'NOT SET',
