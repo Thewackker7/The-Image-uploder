@@ -10,7 +10,7 @@
     <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-    <style>
+    <style type="text/tailwindcss">
         body {
             background: linear-gradient(135deg, #052c1e 0%, #02120b 100%);
             background-attachment: fixed;
@@ -27,22 +27,39 @@
 
         .swiper {
             width: 100%;
-            height: 500px;
+            height: 550px;
+            padding: 50px 0;
         }
 
         .swiper-slide {
+            width: 300px;
+            height: 400px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: #000;
-            border-radius: 12px;
+            border-radius: 20px;
             overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 768px) {
+            .swiper-slide {
+                width: 450px;
+                height: 500px;
+            }
         }
 
         .swiper-slide img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
+        }
+
+        .swiper-button-next, .swiper-button-prev {
+            z-index: 100 !important;
+            filter: drop-shadow(0 0 10px rgba(6,182,212,0.5));
         }
 
         .btn-primary {

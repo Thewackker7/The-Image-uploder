@@ -208,26 +208,47 @@
     {% if posts %}
     const swiper = new Swiper('.swiper', {
         loop: true,
-        pagination: { el: '.swiper-pagination', clickable: true },
-        navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+        parallax: true,
+        speed: 800,
+        autoplay: {
+            delay: 5000,
+            disableOnInteraction: false,
+        },
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+            dynamicBullets: true
+        },
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev'
+        },
         effect: 'coverflow',
         coverflowEffect: {
-            rotate: 10,
+            rotate: 20,
             stretch: 0,
-            depth: 200,
+            depth: 300,
             modifier: 1,
             slideShadows: true,
         },
         centeredSlides: true,
         slidesPerView: 'auto',
         on: {
+            init: function () {
+                updateCounter(this);
+            },
             slideChange: function () {
-                const total = this.slides.filter(s => !s.classList.contains('swiper-slide-duplicate')).length;
-                const current = this.realIndex + 1;
-                document.getElementById('gallery-counter').textContent = `${current} / ${total}`;
+                updateCounter(this);
             }
         }
     });
+
+    function updateCounter(s) {
+        const total = document.querySelectorAll('.swiper-slide:not(.swiper-slide-duplicate)').length;
+        const current = s.realIndex + 1;
+        const counter = document.getElementById('gallery-counter');
+        if (counter) counter.textContent = `${current} / ${total}`;
+    }
     {% endif %}
 
     // Google Picker API Logic
