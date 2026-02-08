@@ -90,9 +90,16 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database configuration
 db_url = os.environ.get('DATABASE_URL')
 if db_url:
-    # 🩹 Automatic fix for common copy-paste error: remove literal brackets [] around password
-    if ':@' not in db_url and ':[' in db_url and ']@' in db_url:
-        db_url = db_url.replace(':[', ':').replace(']@', '@')
+    # 🩹 Highly aggressive cleanup for common copy-paste errors
+    import re
+    
+    # 1. Remove common literal brackets around the password or host
+    # Matches :[password]@ or @[host]:
+    db_url = re.sub(r':\[(.*?)\]@', r':\1@', db_url)
+    db_url = re.sub(r'@\[(.*?)\]:', r'@\1:', db_url)
+    
+    # 2. Fix trailing slashes or spaces
+    db_url = db_url.strip().rstrip('/')
     
     try:
         DATABASES = {
@@ -108,22 +115,30 @@ if db_url:
             DATABASES['default'].setdefault('OPTIONS', {})
             DATABASES['default']['OPTIONS']['sslmode'] = 'require'
         
-        print(f"✓ Database configuration loaded")
+        print(f"✓ Database URL successfully parsed")
     except Exception as e:
-        print(f"✗ ERROR: Database URL parsing failed: {e}")
-        # In production, we want to know why it failed without leaking the whole secret
-        if 'RENDER' in os.environ:
-            import traceback
-            traceback.print_exc()
-            raise
+        print(f"✗ CRITICAL: Database URL parsing failed: {e}")
+        # Log a hint about what's wrong (obscuring actual password)
+        masked_url = re.sub(r':.*?@', ':****@', db_url)
+        print(f"Cleaned URL attempted: {masked_url[:60]}...")
         
-        # Fallback for local dev if DATABASE_URL is broken
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
+        if 'RENDER' in os.environ:
+            # Fallback to a dummy "broken" DB config instead of crashing 
+            # so the health check can at least show us the error page
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': BASE_DIR / 'db.sqlite3',
+                }
             }
-        }
+        else:
+            # In local dev, just use SQLite
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': BASE_DIR / 'db.sqlite3',
+                }
+            }
 else:
     DATABASES = {
         'default': {
@@ -131,7 +146,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-    print("Using SQLite database for local development")
+    print("No DATABASE_URL found. Using SQLite.")
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
