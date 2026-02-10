@@ -31,11 +31,19 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key-for-dev')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = 'RENDER' not in os.environ
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    ALLOWED_HOSTS.append(f"{RENDER_EXTERNAL_HOSTNAME}.onrender.com")
+
+# CSRF settings for Render
+CSRF_TRUSTED_ORIGINS = []
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}.onrender.com")
+
 
 
 # Application definition
@@ -94,9 +102,10 @@ if db_url:
     import re
     
     # 1. Remove common literal brackets around the password or host
-    # Matches :[password]@ or @[host]:
-    db_url = re.sub(r':\[(.*?)\]@', r':\1@', db_url)
-    db_url = re.sub(r'@\[(.*?)\]:', r'@\1:', db_url)
+    # ONLY if they don't look like IPv6 addresses (which require brackets)
+    db_url = re.sub(r':\[([^:]*?)\]@', r':\1@', db_url)
+    db_url = re.sub(r'@\[([^:]*?)\]:', r'@\1:', db_url)
+
     
     # 2. Fix trailing slashes or spaces
     db_url = db_url.strip().rstrip('/')

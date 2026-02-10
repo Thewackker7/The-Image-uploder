@@ -107,10 +107,12 @@
                     data-owner="{{ post.guest_name }}">
                     {% if post.image_file %}
                     <img src="{{ post.image_file.url }}" alt="Uploaded by {{ post.guest_name }}"
-                        class="gallery-img cursor-pointer" title="Double click to delete your photo">
+                        class="gallery-img cursor-pointer">
+
                     {% elif post.image_url %}
                     <img src="{{ post.image_url }}" alt="Shared by {{ post.guest_name }}"
-                        class="gallery-img cursor-pointer" title="Double click to delete your photo">
+                        class="gallery-img cursor-pointer">
+
                     {% endif %}
 
                     <div
@@ -169,6 +171,7 @@
                     </div>
                 </div>
 
+                {% if user.is_staff %}
                 <div id="modal-actions" class="mt-12 pt-8 border-t border-white/10 hidden">
                     <button id="modal-delete-btn"
                         class="w-full py-4 bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/30 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3">
@@ -177,11 +180,12 @@
                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
                             </path>
                         </svg>
-                        Delete Memory
+                        Delete Memory (Admin)
                     </button>
                     <p class="text-[9px] text-gray-600 font-bold uppercase tracking-widest text-center mt-3">This action
                         cannot be undone</p>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -374,12 +378,10 @@
         modalOwner.textContent = owner;
         modalDate.textContent = date;
 
-        const currentGuest = '{{ guest_name }}';
-        if (owner === currentGuest) {
+        if (modalActions) {
             modalActions.classList.remove('hidden');
-        } else {
-            modalActions.classList.add('hidden');
         }
+
 
         modal.classList.remove('hidden');
         setTimeout(() => {
@@ -410,11 +412,14 @@
         });
     });
 
-    deleteBtn.addEventListener('click', function () {
-        if (currentPostId) {
-            window.location.href = `/delete/${currentPostId}/`;
-        }
-    });
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function () {
+            if (currentPostId) {
+                window.location.href = `/delete/${currentPostId}/`;
+            }
+        });
+    }
+
 
     // Close on click outside
     modal.addEventListener('click', function (e) {

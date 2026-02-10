@@ -163,12 +163,14 @@ def upload_drive(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
 
+@csrf_exempt
 def delete_post(request, post_id):
+    if not request.user.is_staff:
+        messages.error(request, "Only admins can delete photos.")
+        return redirect('home')
+        
     post = get_object_or_404(ImagePost, id=post_id)
-    # Only allow the owner to delete
-    if post.guest_name == request.session.get('guest_name'):
-        post.delete()
-        messages.success(request, "Photo deleted successfully.")
-    else:
-        messages.error(request, "You can only delete your own photos.")
+    post.delete()
+    messages.success(request, "Photo deleted successfully.")
     return redirect('home')
+
