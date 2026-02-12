@@ -46,16 +46,15 @@ if RENDER_EXTERNAL_HOSTNAME:
 
 
 
-# Application definition
-
 INSTALLED_APPS = [
+    'whitenoise.runserver_nostatic',
+    'django.contrib.staticfiles',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'cloudinary_storage',
-    'django.contrib.staticfiles',
     'cloudinary',
     'core',
 ]
@@ -197,6 +196,26 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files (Cloudinary)
 MEDIA_URL = '/media/'
 
+# Cloudinary Config
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+if not CLOUDINARY_STORAGE['CLOUD_NAME'] and os.environ.get('CLOUDINARY_URL'):
+    # Parse CLOUDINARY_URL: cloudinary://api_key:api_secret@cloud_name
+    import re
+    c_url = os.environ.get('CLOUDINARY_URL')
+    if c_url.startswith('cloudinary://'):
+        c_url = c_url[len('cloudinary://'):]
+        # api_key:api_secret@cloud_name
+        auth, cloud_name = c_url.split('@')
+        api_key, api_secret = auth.split(':')
+        CLOUDINARY_STORAGE['CLOUD_NAME'] = cloud_name
+        CLOUDINARY_STORAGE['API_KEY'] = api_key
+        CLOUDINARY_STORAGE['API_SECRET'] = api_secret
+
 # Modern STORAGES dictionary for Django 5.0+
 if os.environ.get('RENDER') or os.environ.get('DATABASE_URL'):
     STORAGES = {
@@ -207,6 +226,8 @@ if os.environ.get('RENDER') or os.environ.get('DATABASE_URL'):
             "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
+    # Tell cloudinary-storage not to handle static files on production
+    CLOUDINARY_STORAGE['STATICFILES_STORAGE'] = None
 else:
     # Local development
     MEDIA_ROOT = BASE_DIR / 'MEDIA'
@@ -225,30 +246,14 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
-
-if not CLOUDINARY_STORAGE['CLOUD_NAME'] and os.environ.get('CLOUDINARY_URL'):
-    # Parse CLOUDINARY_URL: cloudinary://api_key:api_secret@cloud_name
-    c_url = os.environ.get('CLOUDINARY_URL')
-    if c_url.startswith('cloudinary://'):
-        c_url = c_url[len('cloudinary://'):]
-        # api_key:api_secret@cloud_name
-        auth, cloud_name = c_url.split('@')
-        api_key, api_secret = auth.split(':')
-        CLOUDINARY_STORAGE['CLOUD_NAME'] = cloud_name
-        CLOUDINARY_STORAGE['API_KEY'] = api_key
-        CLOUDINARY_STORAGE['API_SECRET'] = api_secret
-
-# Also configure the underlying cloudinary library
-cloudinary.config(
-    cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
-    api_key=CLOUDINARY_STORAGE['API_KEY'],
-    api_secret=CLOUDINARY_STORAGE['API_SECRET']
-)
+# Note: CLOUDINARY_STORAGE is defined above in the RENDER/DATABASE_URL block
+# ensure the underlying cloudinary library is configured correctly
+if 'CLOUDINARY_STORAGE' in locals():
+    cloudinary.config(
+        cloud_name=CLOUDINARY_STORAGE.get('CLOUD_NAME'),
+        api_key=CLOUDINARY_STORAGE.get('API_KEY'),
+        api_secret=CLOUDINARY_STORAGE.get('API_SECRET')
+    )
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
