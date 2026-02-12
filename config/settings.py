@@ -204,10 +204,9 @@ if os.environ.get('RENDER') or os.environ.get('DATABASE_URL'):
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
-    WHITENOISE_MANIFEST_STRICT = False
 else:
     # Local development
     MEDIA_ROOT = BASE_DIR / 'MEDIA'
