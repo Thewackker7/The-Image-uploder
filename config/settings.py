@@ -190,7 +190,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (Cloudinary)
@@ -223,11 +223,13 @@ if os.environ.get('RENDER') or os.environ.get('DATABASE_URL'):
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
     # Tell cloudinary-storage not to handle static files on production
     CLOUDINARY_STORAGE['STATICFILES_STORAGE'] = None
+    # Don't fail if a file is missing from manifest
+    WHITENOISE_MANIFEST_STRICT = False
 else:
     # Local development
     MEDIA_ROOT = BASE_DIR / 'MEDIA'
