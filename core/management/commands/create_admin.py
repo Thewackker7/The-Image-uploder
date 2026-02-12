@@ -22,5 +22,7 @@ class Command(BaseCommand):
             user = User.objects.get(username=username)
             user.set_password(password)
             user.email = email
+            user.is_staff = True
+            user.is_superuser = True
             user.save()
-            self.stdout.write(self.style.SUCCESS(f'Successfully updated password for superuser: {username}'))
+            self.stdout.write(self.style.SUCCESS(f'Successfully updated credentials and permissions for superuser: {username}'))
