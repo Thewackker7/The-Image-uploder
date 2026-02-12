@@ -207,6 +207,7 @@ if os.environ.get('RENDER') or os.environ.get('DATABASE_URL'):
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
+    WHITENOISE_MANIFEST_STRICT = False
 else:
     # Local development
     MEDIA_ROOT = BASE_DIR / 'MEDIA'

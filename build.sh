@@ -19,7 +19,7 @@ echo "🗄️ Running migrations..."
 python manage.py migrate --no-input
 
 echo "👤 Creating superuser..."
-python manage.py createsuperuser
+python manage.py create_admin
 
 echo "✅ Build completed successfully!"
 
