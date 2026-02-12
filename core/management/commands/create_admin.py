@@ -15,6 +15,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('DJANGO_SUPERUSER_PASSWORD not set. Skipping superuser creation.'))
             return
 
+        self.stdout.write(f"DEBUG: Processing user '{username}'")
         if not User.objects.filter(username=username).exists():
             User.objects.create_superuser(username=username, email=email, password=password)
             self.stdout.write(self.style.SUCCESS(f'Successfully created superuser: {username}'))
@@ -24,5 +25,6 @@ class Command(BaseCommand):
             user.email = email
             user.is_staff = True
             user.is_superuser = True
+            user.is_active = True
             user.save()
-            self.stdout.write(self.style.SUCCESS(f'Successfully updated credentials and permissions for superuser: {username}'))
+            self.stdout.write(self.style.SUCCESS(f'Successfully updated credentials and permissions for user: {username}'))
